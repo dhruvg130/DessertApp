@@ -1,5 +1,3 @@
-package com.example.dessertclicker.ui
-
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -7,57 +5,48 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import com.example.dessertclicker.R
-import com.example.dessertclicker.model.Dessert
+import com.example.dessertclicker.data.Datasource.dessertList
+import com.example.dessertclicker.ui.DessertUIState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+
 
 class DessertViewModel: ViewModel() {
-
     private val _uiState = MutableStateFlow(DessertUIState())
     val uiState: StateFlow<DessertUIState> = _uiState.asStateFlow()
 
 
+
+
     /**
-     * update revenue and desserts sold and then advance the UI element
-     * to the next dessert
+     * Update the revenue and desserts sold and then advance
+     * the UI element to the next dessert
      *
-     * This is the func of the dessertViewModel clas
-     * that my UI will call to go to the nex dessert after the user
+     * Essentially, this is the function of the DessertViewModel class
+     * that my UI will call to go to the next dessert after the user
      * clicks on a dessert
-      */
-
-    fun nextDessert(){
-
-    }
-
-    /**
-     * Determine which dessert to show.
      */
-    fun determineDessertToShow(
-        desserts: List<Dessert>,
-        dessertsSold: Int
-    ): Dessert {
-        var dessertToShow = desserts.first()
-        for (dessert in desserts) {
-            if (dessertsSold >= dessert.startProductionAmount) {
-                dessertToShow = dessert
-            } else {
-                // The list of desserts is sorted by startProductionAmount. As you sell more desserts,
-                // you'll start producing more expensive desserts as determined by startProductionAmount
-                // We know to break as soon as we see a dessert who's "startProductionAmount" is greater
-                // than the amount sold.
-                break
-            }
+    fun nextDessert() {
+        _uiState.update { currentState ->
+            val dessertsSold = currentState.dessertsSold + 1
+            val nextIndex = currentState.currentDessertIndex + 1
+            currentState.copy(
+                dessertsSold = dessertsSold,
+                revenue = currentState.revenue + currentState.currentDessertPrice,
+                currentDessertIndex = nextIndex,
+                currentDessertPrice = dessertList[nextIndex].price,
+                currentDessertImageId = dessertList[nextIndex].imageId
+            )
         }
-
-        return dessertToShow
     }
+
 
     /**
      * Share desserts sold information using ACTION_SEND intent
      */
-    private fun shareSoldDessertsInformation(intentContext: Context, dessertsSold: Int, revenue: Int) {
+    fun shareSoldDessertsInformation(intentContext: Context, dessertsSold: Int, revenue: Int) {
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(
@@ -67,7 +56,9 @@ class DessertViewModel: ViewModel() {
             type = "text/plain"
         }
 
+
         val shareIntent = Intent.createChooser(sendIntent, null)
+
 
         try {
             ContextCompat.startActivity(intentContext, shareIntent, null)
@@ -80,5 +71,3 @@ class DessertViewModel: ViewModel() {
         }
     }
 }
-
-
